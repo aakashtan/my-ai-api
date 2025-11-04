@@ -26,25 +26,17 @@ def ai_endpoint(query):
     ]
 
     try:
-        stream = client.chat.completions.create(
+        # Non-streaming call for Nightbot compatibility
+        response = client.chat.completions.create(
             model="Qwen/Qwen2.5-72B-Instruct",
             messages=messages,
             temperature=0.5,
-            max_tokens=512,
+            max_tokens=256,  # Keep response short for Nightbot
             top_p=0.7,
-            stream=True
+            stream=False  # <- Key change to prevent timeouts
         )
 
-        assistant_reply = ""
-
-        # SAFELY iterate through stream
-        for chunk in stream:
-            # Check if chunk has choices and at least one choice
-            if hasattr(chunk, "choices") and len(chunk.choices) > 0:
-                delta = chunk.choices[0].delta
-                if delta and delta.get("content") is not None:
-                    # Only concatenate if content is a string
-                    assistant_reply += str(delta["content"])
+        assistant_reply = response.choices[0].message.content
 
         if not assistant_reply:
             return "⚠️ AI returned no response. Try again!"
