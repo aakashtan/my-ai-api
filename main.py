@@ -5,7 +5,6 @@ import os
 
 app = Flask(__name__)
 
-# Load Hugging Face API key from environment variables (set this in Render)
 HF_API_KEY = os.getenv("HF_API_KEY")
 if not HF_API_KEY:
     raise ValueError("Please set the HF_API_KEY environment variable in Render.")
@@ -18,17 +17,14 @@ def home():
 
 @app.route("/<path:query>")
 def ai_endpoint(query):
-    # Decode URL-encoded multi-word query
     query = unquote_plus(query).strip()
 
-    # Prepare conversation for the AI
     messages = [
         {"role": "assistant", "content": "Hello! I'm here to assist you."},
         {"role": "user", "content": f"{query} - reply under 200 characters. Don't mention character count."}
     ]
 
     try:
-        # Generate AI response (stream=True works fine)
         stream = client.chat.completions.create(
             model="Qwen/Qwen2.5-72B-Instruct",
             messages=messages,
@@ -39,18 +35,23 @@ def ai_endpoint(query):
         )
 
         assistant_reply = ""
-        for chunk in stream:
-            if chunk.choices[0].delta.get("content"):
-                assistant_reply += chunk.choices[0].delta["content"]
 
-        # Return plain text, max 256 chars (Nightbot)
+        # SAFELY iterate through stream
+        for chunk in stream:
+            # Ensure 'choices' exists and has at least 1 item
+            if hasattr(chunk, "choices") and len(chunk.choices) > 0:
+                delta = chunk.choices[0].delta
+                if delta and "content" in delta:
+                    assistant_reply += delta["content"]
+
+        if not assistant_reply:
+            return "⚠️ AI returned no response. Try again!"
+
         return assistant_reply.strip()[:256]
 
     except Exception as e:
-        # Catch errors and return friendly message
         return f"⚠️ Error: {str(e)}"
 
 if __name__ == "__main__":
-    # Render assigns its own port via $PORT environment variable
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
