@@ -5,6 +5,7 @@ import os
 
 app = Flask(__name__)
 
+# Load Hugging Face API key from environment variables
 HF_API_KEY = os.getenv("HF_API_KEY")
 if not HF_API_KEY:
     raise ValueError("Please set the HF_API_KEY environment variable in Render.")
@@ -38,16 +39,17 @@ def ai_endpoint(query):
 
         # SAFELY iterate through stream
         for chunk in stream:
-            # Ensure 'choices' exists and has at least 1 item
+            # Check if chunk has choices and at least one choice
             if hasattr(chunk, "choices") and len(chunk.choices) > 0:
                 delta = chunk.choices[0].delta
-                if delta and "content" in delta:
-                    assistant_reply += delta["content"]
+                if delta and delta.get("content") is not None:
+                    # Only concatenate if content is a string
+                    assistant_reply += str(delta["content"])
 
         if not assistant_reply:
             return "⚠️ AI returned no response. Try again!"
 
-        return assistant_reply.strip()[:256]
+        return assistant_reply.strip()[:256]  # Trim to 256 chars for Nightbot
 
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
