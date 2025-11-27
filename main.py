@@ -26,14 +26,13 @@ def ai_endpoint(query):
     ]
 
     try:
-        # Non-streaming call for Nightbot compatibility
         response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-72B-Instruct",
+            model="meta-llama/Meta-Llama-3-8B-Instruct",  # <— FIXED MODEL
             messages=messages,
             temperature=0.5,
-            max_tokens=256,  # Keep response short for Nightbot
+            max_tokens=256,
             top_p=0.7,
-            stream=False  # <- Key change to prevent timeouts
+            stream=False
         )
 
         assistant_reply = response.choices[0].message.content
@@ -41,7 +40,7 @@ def ai_endpoint(query):
         if not assistant_reply:
             return "⚠️ AI returned no response. Try again!"
 
-        return assistant_reply.strip()[:256]  # Trim to 256 chars for Nightbot
+        return assistant_reply.strip()[:256]
 
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
