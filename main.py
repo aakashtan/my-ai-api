@@ -19,20 +19,24 @@ def home():
 def ai_endpoint(query):
     query = unquote_plus(query).strip()
     messages = [
-        {"role": "user", "content": f"{query} - reply under 200 characters. Don't mention character count."}
+        {"role": "system", "content": "Reasoning: low. Answer directly and briefly, under 200 characters. Don't mention character count."},
+        {"role": "user", "content": query}
     ]
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",   # small, free-tier friendly, currently supported
+            model="openai/gpt-oss-20b",
             messages=messages,
             temperature=0.5,
-            max_tokens=256,
+            max_tokens=1024,   # give room for reasoning + answer
             top_p=0.7,
             stream=False
         )
-        assistant_reply = response.choices[0].message.content
+        choice = response.choices[0]
+        assistant_reply = choice.message.content
+
         if not assistant_reply:
             return "⚠️ AI returned no response. Try again!"
+
         return assistant_reply.strip()[:256]
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
