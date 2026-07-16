@@ -5,7 +5,6 @@ import os
 
 app = Flask(__name__)
 
-# Load Hugging Face API key from environment variables
 HF_API_KEY = os.getenv("HF_API_KEY")
 if not HF_API_KEY:
     raise ValueError("Please set the HF_API_KEY environment variable in Render.")
@@ -19,29 +18,22 @@ def home():
 @app.route("/<path:query>")
 def ai_endpoint(query):
     query = unquote_plus(query).strip()
-
     messages = [
-        {"role": "assistant", "content": "Hello! I'm here to assist you."},
         {"role": "user", "content": f"{query} - reply under 200 characters. Don't mention character count."}
     ]
-
     try:
         response = client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3-8B-Instruct",  # <— FIXED MODEL
+            model="openai/gpt-oss-20b",   # small, free-tier friendly, currently supported
             messages=messages,
             temperature=0.5,
             max_tokens=256,
             top_p=0.7,
             stream=False
         )
-
         assistant_reply = response.choices[0].message.content
-
         if not assistant_reply:
             return "⚠️ AI returned no response. Try again!"
-
         return assistant_reply.strip()[:256]
-
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
 
